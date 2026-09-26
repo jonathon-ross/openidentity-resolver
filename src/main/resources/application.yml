@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: openidentity-resolver
+  datasource:
+    url: ${OPENIDENTITY_DB_URL:jdbc:postgresql://localhost:5432/openidentity}
+    username: ${OPENIDENTITY_DB_USER:openidentity}
+    password: ${OPENIDENTITY_DB_PASSWORD:openidentity}
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  port: ${PORT:8080}
