@@ -7,10 +7,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 @Repository
-final class JdbcIdentityStateRepository implements IdentityStateRepository {
+public class JdbcIdentityStateRepository implements IdentityStateRepository {
   private final JdbcClient jdbc;
 
-  JdbcIdentityStateRepository(JdbcClient jdbc) {
+  public JdbcIdentityStateRepository(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
 
