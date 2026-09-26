@@ -59,7 +59,7 @@ cd ../openidentity-java
 mvn clean install
 ```
 
-The next resolver milestone adds the SDK dependency and signed operation submission.
+The resolver consumes **openidentity-java 0.1.1** for canonical operation decoding and protocol transitions.
 
 ## Security model
 
@@ -71,3 +71,26 @@ Resolver responses are untrusted data until verified. A credential verifier shou
 4. verify the credential against that historical state's AssertionPolicy.
 
 This prevents resolver substitution from changing credential authority.
+
+
+## Submit CREATE
+
+`POST /v1/operations` currently accepts CREATE only.
+
+The HTTP envelope uses unpadded base64url for canonical operation bytes, method IDs, and raw signatures:
+
+```json
+{
+  "operation": "<base64url canonical CREATE bytes>",
+  "proofs": [
+    {
+      "methodId": "<base64url 16-byte VerificationMethodId>",
+      "signature": "<base64url raw signature>"
+    }
+  ]
+}
+```
+
+The resolver decodes the operation through `OpenIdentityOperationDecoder`, verifies CREATE authorization with `CreateTransition`, derives canonical IdentityState bytes and StateHash, then atomically stores both the operation and resulting state.
+
+Duplicate CREATE returns HTTP 409. Invalid operation/proof/authorization returns HTTP 400 with a stable error code.
