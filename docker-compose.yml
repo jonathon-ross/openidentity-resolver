@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: openidentity
+      POSTGRES_USER: openidentity
+      POSTGRES_PASSWORD: openidentity
+    ports:
+      - "5432:5432"
+    volumes:
+      - openidentity-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openidentity -d openidentity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  openidentity-postgres:
