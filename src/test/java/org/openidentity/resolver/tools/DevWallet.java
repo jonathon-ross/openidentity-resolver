@@ -6,6 +6,7 @@ import java.util.List;
 public record DevWallet(
     String identityHex,
     String activeController,
+    String pendingController,
     List<KeyEntry> controllers,
     KeyEntry assertion) {
 
