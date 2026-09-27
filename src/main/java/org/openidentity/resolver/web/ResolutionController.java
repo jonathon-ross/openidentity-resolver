@@ -2,7 +2,10 @@ package org.openidentity.resolver.web;
 
 import org.openidentity.resolver.state.IdentityStateRepository;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /** HTTP endpoints for current and exact historical identity-state resolution. */
 @RestController
@@ -11,6 +14,8 @@ public final class ResolutionController {
   private final IdentityStateRepository states;
 
   /**
+   * Creates the resolution endpoint.
+   *
    * @param states immutable identity-state repository
    */
   public ResolutionController(IdentityStateRepository states) {
