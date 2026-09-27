@@ -11,16 +11,13 @@ resolve_maven() {
     return
   fi
 
-  if [[ -n "${MAVEN_HOME:-}" && -x "${MAVEN_HOME}/bin/mvn" ]]; then
-    printf '%s\n' "${MAVEN_HOME}/bin/mvn"
-    return
-  fi
-
-  if command -v cygpath >/dev/null 2>&1; then
-    local fallback
-    fallback="$(cygpath -u 'C:\\Users\\jonat\\apache-maven-3.9.16\\bin\\mvn.cmd')"
-    if [[ -f "$fallback" ]]; then
-      printf '%s\n' "$fallback"
+  if [[ -n "${MAVEN_HOME:-}" ]]; then
+    if [[ -x "${MAVEN_HOME}/bin/mvn" ]]; then
+      printf '%s\n' "${MAVEN_HOME}/bin/mvn"
+      return
+    fi
+    if [[ -f "${MAVEN_HOME}/bin/mvn.cmd" ]]; then
+      printf '%s\n' "${MAVEN_HOME}/bin/mvn.cmd"
       return
     fi
   fi
