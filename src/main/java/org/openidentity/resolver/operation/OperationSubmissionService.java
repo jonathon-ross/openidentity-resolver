@@ -35,10 +35,14 @@ public class OperationSubmissionService {
           case CreateOperation create -> applyCreate(create, authorization);
           case RotateControllerOperation rotate ->
               applyRotate(rotate, authorization, possession);
+          case SetAssertionPolicyOperation assertion ->
+              applyAssertion(assertion, authorization, possession);
+          case DeactivateOperation deactivate ->
+              applyDeactivate(deactivate, authorization);
           default ->
               throw new OperationSubmissionException(
                   "UNSUPPORTED_OPERATION",
-                  "Resolver currently accepts CREATE and ROTATE_CONTROLLER");
+                  "Resolver currently accepts CREATE, ROTATE_CONTROLLER, SET_ASSERTION_POLICY, and DEACTIVATE");
         };
 
     return persist(operation, operationBytes, resultingState);
@@ -62,6 +66,32 @@ public class OperationSubmissionService {
     IdentityState current = loadCurrent(operation.identity());
     try {
       return RotateControllerTransition.apply(current, operation, authorization, possession);
+    } catch (OpenIdentityException e) {
+      throw protocolFailure(e);
+    } catch (IllegalArgumentException e) {
+      throw invalidOperation(e);
+    }
+  }
+
+  private IdentityState applyAssertion(
+      SetAssertionPolicyOperation operation,
+      List<SignatureProof> authorization,
+      List<SignatureProof> possession) {
+    IdentityState current = loadCurrent(operation.identity());
+    try {
+      return SetAssertionPolicyTransition.apply(current, operation, authorization, possession);
+    } catch (OpenIdentityException e) {
+      throw protocolFailure(e);
+    } catch (IllegalArgumentException e) {
+      throw invalidOperation(e);
+    }
+  }
+
+  private IdentityState applyDeactivate(
+      DeactivateOperation operation, List<SignatureProof> authorization) {
+    IdentityState current = loadCurrent(operation.identity());
+    try {
+      return DeactivateTransition.apply(current, operation, authorization);
     } catch (OpenIdentityException e) {
       throw protocolFailure(e);
     } catch (IllegalArgumentException e) {
