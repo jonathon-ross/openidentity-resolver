@@ -49,6 +49,10 @@ public final class DevWalletCli {
         if (args.length != 2) usage();
         issueCredential(args[1]);
       }
+      case "rotate-assertion" -> {
+        if (args.length != 2) usage();
+        rotateAssertion(args[1]);
+      }
       default -> usage();
     }
   }
@@ -263,6 +267,68 @@ public final class DevWalletCli {
     System.out.println("Discarded pending assertion key: " + discarded);
   }
 
+  private static void rotateAssertion(String currentStateHashHex) throws Exception {
+    DevWallet wallet = load();
+    if (wallet.assertion() == null) {
+      throw new IllegalStateException("No active assertion key exists.");
+    }
+    if (wallet.pendingAssertion() != null) {
+      throw new IllegalStateException(
+          "A pending assertion key already exists. Submit/activate or discard it first.");
+    }
+
+    DevWallet.KeyEntry controller = activeController(wallet);
+    int assertionNumber =
+        wallet.assertion().name().startsWith("assertion-")
+            ? Integer.parseInt(wallet.assertion().name().substring("assertion-".length())) + 1
+            : 2;
+    DevWallet.KeyEntry nextAssertion =
+        newKey("assertion-" + assertionNumber, new SecureRandom());
+
+    VerificationMethod controllerMethod = verificationMethod(controller);
+    VerificationMethod assertionMethod = verificationMethod(nextAssertion);
+    SetAssertionPolicyOperation operation =
+        new SetAssertionPolicyOperation(
+            IdentityId.of(HEX.parseHex(wallet.identityHex())),
+            Sequence.of(4),
+            new StateHash(MultihashSha256.of(HEX.parseHex(currentStateHashHex))),
+            AssertionPolicy.single(assertionMethod));
+
+    SignatureProof authorization =
+        sign(
+            controller,
+            controllerMethod.id(),
+            SigningInputs.operation(operation.encode()));
+    SignatureProof possession =
+        sign(
+            nextAssertion,
+            assertionMethod.id(),
+            SigningInputs.controllerProof(operation.encode(), assertionMethod.id()));
+
+    save(
+        new DevWallet(
+            wallet.identityHex(),
+            wallet.activeController(),
+            wallet.pendingController(),
+            wallet.controllers(),
+            wallet.assertion(),
+            nextAssertion));
+
+    Map<String, Object> request =
+        Map.of(
+            "operation",
+            b64url(operation.encode()),
+            "proofs",
+            List.of(proofJson(authorization)),
+            "proofsOfPossession",
+            List.of(proofJson(possession)));
+
+    System.out.println("Identity: " + wallet.identityHex());
+    System.out.println("Current assertion key: " + wallet.assertion().name());
+    System.out.println("Pending assertion key: " + nextAssertion.name());
+    System.out.println(JSON.writeValueAsString(request));
+  }
+
   private static void issueCredential(String issuanceStateHashHex) throws Exception {
     DevWallet wallet = load();
     if (wallet.assertion() == null) {
@@ -381,6 +447,6 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX>");
+    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX|rotate-assertion STATE_HASH_HEX>");
   }
 }
