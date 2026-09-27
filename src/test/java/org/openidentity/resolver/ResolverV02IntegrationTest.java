@@ -17,7 +17,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
+@SpringBootTest(properties = {\n    "spring.datasource.url=jdbc:postgresql://localhost:5433/openidentity_test",\n    "spring.datasource.username=openidentity",\n    "spring.datasource.password=openidentity"\n})
 @AutoConfigureMockMvc
 @Testcontainers
 class ResolverV02IntegrationTest {
