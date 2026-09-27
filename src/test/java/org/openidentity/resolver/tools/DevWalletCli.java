@@ -10,6 +10,8 @@ import java.util.*;
 import org.openidentity.core.*;
 import org.openidentity.crypto.SignatureProof;
 import org.openidentity.crypto.SigningInputs;
+import org.openidentity.credentials.CredentialSigningInputs;
+import org.openidentity.credentials.OpenIdentityCredential;
 import org.openidentity.operations.CreateOperation;
 import org.openidentity.operations.RotateControllerOperation;
 import org.openidentity.operations.SetAssertionPolicyOperation;
@@ -43,6 +45,10 @@ public final class DevWalletCli {
       }
       case "activate-assertion" -> activateAssertion();
       case "discard-pending-assertion" -> discardPendingAssertion();
+      case "issue-credential" -> {
+        if (args.length != 2) usage();
+        issueCredential(args[1]);
+      }
       default -> usage();
     }
   }
@@ -257,6 +263,52 @@ public final class DevWalletCli {
     System.out.println("Discarded pending assertion key: " + discarded);
   }
 
+  private static void issueCredential(String issuanceStateHashHex) throws Exception {
+    DevWallet wallet = load();
+    if (wallet.assertion() == null) {
+      throw new IllegalStateException("No active assertion key. Activate assertion authority first.");
+    }
+
+    byte[] credentialId = new byte[32];
+    new SecureRandom().nextBytes(credentialId);
+    byte[] subject = ("did:open-dev:" + wallet.identityHex()).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    long validFrom = java.time.Instant.now().getEpochSecond();
+    OpenIdentityCredential credential =
+        new OpenIdentityCredential(
+            credentialId,
+            IdentityId.of(HEX.parseHex(wallet.identityHex())),
+            new StateHash(MultihashSha256.of(HEX.parseHex(issuanceStateHashHex))),
+            validFrom,
+            validFrom + 86400,
+            "https://openidentity.org/credentials/basic/v1",
+            subject,
+            Map.of(
+                "name", "OpenIdentity Resolver Development Credential",
+                "purpose", "historical-state interoperability"));
+
+    VerificationMethod assertionMethod = verificationMethod(wallet.assertion());
+    byte[] credentialBytes = credential.encode();
+    SignatureProof proof =
+        sign(
+            wallet.assertion(),
+            assertionMethod.id(),
+            CredentialSigningInputs.credential(credentialBytes));
+
+    Map<String, Object> output =
+        Map.of(
+            "credential", b64url(credentialBytes),
+            "issuer", wallet.identityHex(),
+            "issuanceStateHash", issuanceStateHashHex,
+            "proofs", List.of(proofJson(proof)));
+
+    Path credentialFile = WALLET.getParent().resolve("credential-1.json");
+    JSON.writeValue(credentialFile.toFile(), output);
+    System.out.println("Issued credential: " + credentialFile);
+    System.out.println("Issuer: " + wallet.identityHex());
+    System.out.println("Issuance StateHash: " + issuanceStateHashHex);
+    System.out.println("Credential ID: " + HEX.formatHex(credentialId));
+  }
+
   private static Map<String, Object> proofJson(SignatureProof proof) {
     return Map.of(
         "methodId", b64url(proof.methodId().bytes()),
@@ -329,6 +381,6 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion>");
+    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX>");
   }
 }
