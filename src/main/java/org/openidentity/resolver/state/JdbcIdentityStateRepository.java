@@ -6,10 +6,16 @@ import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+/** PostgreSQL-backed immutable identity-state repository. */
 @Repository
 public class JdbcIdentityStateRepository implements IdentityStateRepository {
   private final JdbcClient jdbc;
 
+  /**
+   * Creates a repository using Spring's JDBC client.
+   *
+   * @param jdbc configured resolver database client
+   */
   public JdbcIdentityStateRepository(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
