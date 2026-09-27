@@ -164,7 +164,8 @@ public final class DevWalletCli {
             activated,
             null,
             wallet.controllers(),
-            wallet.assertion()));
+            wallet.assertion(),
+            wallet.pendingAssertion()));
     System.out.println("Activated controller: " + activated);
   }
 
