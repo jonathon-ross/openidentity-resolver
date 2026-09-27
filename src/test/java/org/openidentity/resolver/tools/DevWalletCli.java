@@ -42,6 +42,7 @@ public final class DevWalletCli {
         setAssertionPolicy(args[1]);
       }
       case "activate-assertion" -> activateAssertion();
+      case "discard-pending-assertion" -> discardPendingAssertion();
       default -> usage();
     }
   }
@@ -239,6 +240,23 @@ public final class DevWalletCli {
     System.out.println("Activated assertion key: " + activated.name());
   }
 
+  private static void discardPendingAssertion() throws Exception {
+    DevWallet wallet = load();
+    if (wallet.pendingAssertion() == null) {
+      throw new IllegalStateException("No pending assertion key exists.");
+    }
+    String discarded = wallet.pendingAssertion().name();
+    save(
+        new DevWallet(
+            wallet.identityHex(),
+            wallet.activeController(),
+            wallet.pendingController(),
+            wallet.controllers(),
+            wallet.assertion(),
+            null));
+    System.out.println("Discarded pending assertion key: " + discarded);
+  }
+
   private static Map<String, Object> proofJson(SignatureProof proof) {
     return Map.of(
         "methodId", b64url(proof.methodId().bytes()),
@@ -311,6 +329,6 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion>");
+    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion>");
   }
 }
