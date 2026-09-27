@@ -8,7 +8,8 @@ public record DevWallet(
     String activeController,
     String pendingController,
     List<KeyEntry> controllers,
-    KeyEntry assertion) {
+    KeyEntry assertion,
+    KeyEntry pendingAssertion) {
 
   public record KeyEntry(
       String name,
