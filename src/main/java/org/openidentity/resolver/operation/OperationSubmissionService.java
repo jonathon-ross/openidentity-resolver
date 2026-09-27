@@ -11,14 +11,23 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Verifies protocol operations, applies SDK transitions, and atomically appends state history. */
 @Service
 public class OperationSubmissionService {
   private final JdbcClient jdbc;
 
+  /** @param jdbc configured resolver database client */
   public OperationSubmissionService(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
 
+  /**
+   * Decodes, verifies, applies, and persists one protocol operation.
+   *
+   * @param request canonical operation and detached proofs
+   * @return resulting state metadata
+   * @throws OperationSubmissionException when decoding, authorization, transition, or persistence fails
+   */
   @Transactional
   public OperationSubmissionResponse submit(OperationSubmissionRequest request) {
     if (request == null || request.operation() == null) {
