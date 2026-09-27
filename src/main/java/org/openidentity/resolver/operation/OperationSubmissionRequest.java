@@ -11,5 +11,12 @@ import java.util.List;
  */
 public record OperationSubmissionRequest(
     String operation, List<ProofRequest> proofs, List<ProofRequest> proofsOfPossession) {
+
+  /**
+   * Detached protocol signature proof.
+   *
+   * @param methodId unpadded base64url 16-byte VerificationMethodId
+   * @param signature unpadded base64url raw signature bytes
+   */
   public record ProofRequest(String methodId, String signature) {}
 }
