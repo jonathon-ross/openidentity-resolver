@@ -170,3 +170,31 @@ mvn test-compile exec:java \
 The command prints the identity followed by a JSON request body. Save only the JSON object and submit it to `POST /v1/operations`.
 
 The development wallet is for local interoperability testing only. Do not use it as production key-management infrastructure.
+
+
+## Historical credential authority milestone
+
+The resolver has been exercised end-to-end with a mutable development identity:
+
+```text
+sequence 1  CREATE                 IdentityStateV1 / controller-1
+sequence 2  ROTATE_CONTROLLER     IdentityStateV1 / controller-2
+sequence 3  SET_ASSERTION_POLICY  IdentityStateV2 / assertion-1
+            ISSUE CREDENTIAL      issuanceStateHash -> sequence 3
+sequence 4  SET_ASSERTION_POLICY  IdentityStateV2 / assertion-2
+```
+
+After sequence 4 became current, the sequence-3 credential was verified by resolving its signed `issuanceStateHash`, decoding the immutable historical state, and passing that exact state to `CredentialVerifier.verifyResult()`.
+
+This demonstrates the OI-003 historical-authority property: replacing current assertion authority does not invalidate an older credential merely because its issuing key is no longer current. The verifier does not trust current authority for historical issuance; it verifies against the exact state cryptographically bound into the credential.
+
+Run the local verifier:
+
+```bash
+mvn test-compile exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=org.openidentity.resolver.tools.DevWalletCli \
+  -Dexec.args=verify-credential
+```
+
+A successful post-rotation check reports a historical sequence lower than the current sequence and `Cryptographic verification: VALID`.
