@@ -16,7 +16,7 @@ public final class OperationSubmissionException extends RuntimeException {
     this.code = code;
   }
 
-  /**\n   * Returns the stable machine-readable error code.\n   *\n   * @return resolver error code\n   */
+  /** \n * Returns the stable machine-readable error code.\n *\n * @return resolver error code\n */
   public String code() {
     return code;
   }
