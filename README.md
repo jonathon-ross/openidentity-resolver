@@ -94,3 +94,52 @@ The HTTP envelope uses unpadded base64url for canonical operation bytes, method 
 The resolver decodes the operation through `OpenIdentityOperationDecoder`, verifies CREATE authorization with `CreateTransition`, derives canonical IdentityState bytes and StateHash, then atomically stores both the operation and resulting state.
 
 Duplicate CREATE returns HTTP 409. Invalid operation/proof/authorization returns HTTP 400 with a stable error code.
+
+
+## End-to-end V02 interoperability check
+
+The repository pins the released Protocol v0.1.1 cryptographic-agility vector bundle for interoperability testing. Generate an HTTP request from normative vector V02:
+
+```bash
+python tools/v02-create-request.py > v02-request.txt
+```
+
+The first two lines show the expected identity and StateHash. The remainder is the JSON request body. A convenient Git Bash flow is:
+
+```bash
+python tools/v02-create-request.py
+```
+
+Copy only the printed JSON object into `v02.json`, then submit:
+
+```bash
+curl -i -X POST http://localhost:8080/v1/operations \
+  -H "Content-Type: application/json" \
+  --data-binary @v02.json
+```
+
+Expected result is HTTP 201. The returned `identity` must be:
+
+```text
+000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+```
+
+and the returned `stateHash` must be:
+
+```text
+122091584ca3a54ebcf93d77c38ea09f68d33c99d6565c7aefab008bd11c09f5efa3
+```
+
+Resolve the persisted current state:
+
+```bash
+curl http://localhost:8080/v1/identities/000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+```
+
+Then resolve the exact historical state:
+
+```bash
+curl http://localhost:8080/v1/identities/000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f/states/122091584ca3a54ebcf93d77c38ea09f68d33c99d6565c7aefab008bd11c09f5efa3
+```
+
+Submitting V02 a second time should return HTTP 409 `IDENTITY_ALREADY_EXISTS`.
