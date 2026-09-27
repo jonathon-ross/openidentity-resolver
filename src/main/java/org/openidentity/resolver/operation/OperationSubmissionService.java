@@ -39,10 +39,12 @@ public class OperationSubmissionService {
               applyAssertion(assertion, authorization, possession);
           case DeactivateOperation deactivate ->
               applyDeactivate(deactivate, authorization);
+          case RecoverOperation recover ->
+              applyRecover(recover, authorization, possession);
           default ->
               throw new OperationSubmissionException(
                   "UNSUPPORTED_OPERATION",
-                  "Resolver currently accepts CREATE, ROTATE_CONTROLLER, SET_ASSERTION_POLICY, and DEACTIVATE");
+                  "Resolver accepts all OpenIdentity Protocol v0.1.1 operation types");
         };
 
     return persist(operation, operationBytes, resultingState);
@@ -92,6 +94,21 @@ public class OperationSubmissionService {
     IdentityState current = loadCurrent(operation.identity());
     try {
       return DeactivateTransition.apply(current, operation, authorization);
+    } catch (OpenIdentityException e) {
+      throw protocolFailure(e);
+    } catch (IllegalArgumentException e) {
+      throw invalidOperation(e);
+    }
+  }
+
+  private IdentityState applyRecover(
+      RecoverOperation operation,
+      List<SignatureProof> recoveryProofs,
+      List<SignatureProof> controllerPossession) {
+    IdentityState current = loadCurrent(operation.identity());
+    try {
+      return RecoverTransition.apply(
+          current, operation, recoveryProofs, controllerPossession);
     } catch (OpenIdentityException e) {
       throw protocolFailure(e);
     } catch (IllegalArgumentException e) {
