@@ -139,7 +139,8 @@ public final class RecoveryWalletCli {
       throws Exception {
     PrivateKey key =
         KeyFactory.getInstance("Ed25519")
-            .generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(entry.privateKey())));
+            .generatePrivate(
+                new PKCS8EncodedKeySpec(Base64.getDecoder().decode(entry.privateKey())));
     Signature signer = Signature.getInstance("Ed25519");
     signer.initSign(key);
     signer.update(input);

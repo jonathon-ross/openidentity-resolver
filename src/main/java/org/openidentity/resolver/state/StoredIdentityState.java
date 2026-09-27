@@ -19,7 +19,18 @@ public record StoredIdentityState(
     canonicalStateBytes = canonicalStateBytes.clone();
   }
 
-  @Override public byte[] stateHash() { return stateHash.clone(); }
-  @Override public byte[] identityId() { return identityId.clone(); }
-  @Override public byte[] canonicalStateBytes() { return canonicalStateBytes.clone(); }
+  @Override
+  public byte[] stateHash() {
+    return stateHash.clone();
+  }
+
+  @Override
+  public byte[] identityId() {
+    return identityId.clone();
+  }
+
+  @Override
+  public byte[] canonicalStateBytes() {
+    return canonicalStateBytes.clone();
+  }
 }

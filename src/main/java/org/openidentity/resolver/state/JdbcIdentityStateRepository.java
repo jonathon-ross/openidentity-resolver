@@ -16,7 +16,8 @@ public class JdbcIdentityStateRepository implements IdentityStateRepository {
 
   @Override
   public Optional<StoredIdentityState> findCurrent(byte[] identityId) {
-    return jdbc.sql("""
+    return jdbc.sql(
+            """
             SELECT state_hash, identity_id, sequence, state_version, status,
                    canonical_state_bytes, created_at
             FROM identity_state
@@ -31,7 +32,8 @@ public class JdbcIdentityStateRepository implements IdentityStateRepository {
 
   @Override
   public Optional<StoredIdentityState> findHistorical(byte[] identityId, byte[] stateHash) {
-    return jdbc.sql("""
+    return jdbc.sql(
+            """
             SELECT state_hash, identity_id, sequence, state_version, status,
                    canonical_state_bytes, created_at
             FROM identity_state

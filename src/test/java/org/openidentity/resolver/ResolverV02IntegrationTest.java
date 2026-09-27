@@ -75,9 +75,7 @@ class ResolverV02IntegrationTest {
         .andExpect(status().isCreated());
 
     mvc.perform(
-            post("/v1/operations")
-                .contentType("application/json")
-                .content(rotateRequest(rotate)))
+            post("/v1/operations").contentType("application/json").content(rotateRequest(rotate)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.sequence").value(2))
         .andExpect(jsonPath("$.stateHash").value(secondHash));
@@ -96,9 +94,7 @@ class ResolverV02IntegrationTest {
         .andExpect(jsonPath("$.sequence").value(2));
 
     mvc.perform(
-            post("/v1/operations")
-                .contentType("application/json")
-                .content(rotateRequest(rotate)))
+            post("/v1/operations").contentType("application/json").content(rotateRequest(rotate)))
         .andExpect(status().isBadRequest());
   }
 

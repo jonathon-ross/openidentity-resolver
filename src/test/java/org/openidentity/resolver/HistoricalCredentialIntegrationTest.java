@@ -92,10 +92,7 @@ class HistoricalCredentialIntegrationTest {
 
     SetAssertionPolicyOperation rotateAssertion =
         new SetAssertionPolicyOperation(
-            identity,
-            Sequence.of(3),
-            issuanceHash,
-            AssertionPolicy.single(assertion2.method()));
+            identity, Sequence.of(3), issuanceHash, AssertionPolicy.single(assertion2.method()));
     String rotationResponse =
         submit(
             rotateAssertion.encode(),
@@ -110,11 +107,7 @@ class HistoricalCredentialIntegrationTest {
 
     String identityHex = HEX.formatHex(identity.bytes());
     String historicalJson =
-        mvc.perform(
-                get(
-                    "/v1/identities/{identity}/states/{hash}",
-                    identityHex,
-                    issuanceHashHex))
+        mvc.perform(get("/v1/identities/{identity}/states/{hash}", identityHex, issuanceHashHex))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sequence").value(2))
             .andReturn()
@@ -138,16 +131,15 @@ class HistoricalCredentialIntegrationTest {
   }
 
   private String submit(
-      byte[] operation,
-      List<SignatureProof> proofs,
-      List<SignatureProof> pops,
-      int expectedStatus)
+      byte[] operation, List<SignatureProof> proofs, List<SignatureProof> pops, int expectedStatus)
       throws Exception {
     String body =
         JSON.writeValueAsString(
             Map.of(
-                "operation", b64(operation),
-                "proofs", proofs.stream().map(HistoricalCredentialIntegrationTest::proof).toList(),
+                "operation",
+                b64(operation),
+                "proofs",
+                proofs.stream().map(HistoricalCredentialIntegrationTest::proof).toList(),
                 "proofsOfPossession",
                 pops.stream().map(HistoricalCredentialIntegrationTest::proof).toList()));
     return mvc.perform(post("/v1/operations").contentType("application/json").content(body))

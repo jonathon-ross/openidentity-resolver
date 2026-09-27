@@ -48,11 +48,8 @@ class RecoveryIntegrationTest {
 
     CreateOperation create =
         new CreateOperation(
-            identity,
-            ControllerPolicy.single(oldController.method()),
-            commitment(recoveryPolicy));
-    SignatureProof createProof =
-        sign(oldController, SigningInputs.operation(create.encode()));
+            identity, ControllerPolicy.single(oldController.method()), commitment(recoveryPolicy));
+    SignatureProof createProof = sign(oldController, SigningInputs.operation(create.encode()));
 
     String createResponse =
         mvc.perform(
@@ -77,9 +74,7 @@ class RecoveryIntegrationTest {
             commitment(nextRecoveryPolicy));
 
     SignatureProof recoveryProof =
-        sign(
-            recovery,
-            SigningInputs.recovery(recover.encode(), recovery.method().id()));
+        sign(recovery, SigningInputs.recovery(recover.encode(), recovery.method().id()));
     SignatureProof controllerPop =
         sign(
             newController,
@@ -90,10 +85,7 @@ class RecoveryIntegrationTest {
                 post("/v1/operations")
                     .contentType("application/json")
                     .content(
-                        request(
-                            recover.encode(),
-                            List.of(recoveryProof),
-                            List.of(controllerPop))))
+                        request(recover.encode(), List.of(recoveryProof), List.of(controllerPop))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.sequence").value(2))
             .andExpect(jsonPath("$.stateVersion").value(1))
@@ -125,8 +117,7 @@ class RecoveryIntegrationTest {
   }
 
   private static String request(
-      byte[] operation, List<SignatureProof> proofs, List<SignatureProof> pops)
-      throws Exception {
+      byte[] operation, List<SignatureProof> proofs, List<SignatureProof> pops) throws Exception {
     return JSON.writeValueAsString(
         Map.of(
             "operation", b64(operation),

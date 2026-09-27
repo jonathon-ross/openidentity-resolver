@@ -33,14 +33,11 @@ public class OperationSubmissionService {
     IdentityState resultingState =
         switch (operation) {
           case CreateOperation create -> applyCreate(create, authorization);
-          case RotateControllerOperation rotate ->
-              applyRotate(rotate, authorization, possession);
+          case RotateControllerOperation rotate -> applyRotate(rotate, authorization, possession);
           case SetAssertionPolicyOperation assertion ->
               applyAssertion(assertion, authorization, possession);
-          case DeactivateOperation deactivate ->
-              applyDeactivate(deactivate, authorization);
-          case RecoverOperation recover ->
-              applyRecover(recover, authorization, possession);
+          case DeactivateOperation deactivate -> applyDeactivate(deactivate, authorization);
+          case RecoverOperation recover -> applyRecover(recover, authorization, possession);
           default ->
               throw new OperationSubmissionException(
                   "UNSUPPORTED_OPERATION",
@@ -107,8 +104,7 @@ public class OperationSubmissionService {
       List<SignatureProof> controllerPossession) {
     IdentityState current = loadCurrent(operation.identity());
     try {
-      return RecoverTransition.apply(
-          current, operation, recoveryProofs, controllerPossession);
+      return RecoverTransition.apply(current, operation, recoveryProofs, controllerPossession);
     } catch (OpenIdentityException e) {
       throw protocolFailure(e);
     } catch (IllegalArgumentException e) {
@@ -117,7 +113,8 @@ public class OperationSubmissionService {
   }
 
   private IdentityState loadCurrent(IdentityId identity) {
-    return jdbc.sql("""
+    return jdbc.sql(
+            """
             SELECT canonical_state_bytes
             FROM identity_state
             WHERE identity_id = :identityId
@@ -139,7 +136,8 @@ public class OperationSubmissionService {
     StateHash stateHash = StateHash.fromStateBytes(stateBytes);
 
     try {
-      jdbc.sql("""
+      jdbc.sql(
+              """
               INSERT INTO identity_state
                 (state_hash, identity_id, sequence, state_version, status, canonical_state_bytes)
               VALUES
@@ -153,7 +151,8 @@ public class OperationSubmissionService {
           .param("stateBytes", stateBytes)
           .update();
 
-      jdbc.sql("""
+      jdbc.sql(
+              """
               INSERT INTO identity_operation
                 (identity_id, sequence, operation_type, canonical_operation_bytes, resulting_state_hash)
               VALUES
@@ -166,7 +165,8 @@ public class OperationSubmissionService {
           .param("stateHash", stateHash.bytes())
           .update();
     } catch (DuplicateKeyException e) {
-      String code = operation instanceof CreateOperation ? "IDENTITY_ALREADY_EXISTS" : "OPERATION_CONFLICT";
+      String code =
+          operation instanceof CreateOperation ? "IDENTITY_ALREADY_EXISTS" : "OPERATION_CONFLICT";
       throw new OperationSubmissionException(
           code, "Identity sequence, state, or operation already exists");
     }
@@ -196,7 +196,8 @@ public class OperationSubmissionService {
         "INVALID_OPERATION", e.getMessage() == null ? "Invalid operation" : e.getMessage());
   }
 
-  private List<SignatureProof> decodeProofs(List<OperationSubmissionRequest.ProofRequest> submitted) {
+  private List<SignatureProof> decodeProofs(
+      List<OperationSubmissionRequest.ProofRequest> submitted) {
     if (submitted == null) return List.of();
     ArrayList<SignatureProof> proofs = new ArrayList<>(submitted.size());
     for (var proof : submitted) {

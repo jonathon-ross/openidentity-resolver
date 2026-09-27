@@ -4,6 +4,7 @@ import java.util.HexFormat;
 
 final class Hex {
   private static final HexFormat HEX = HexFormat.of();
+
   private Hex() {}
 
   static byte[] identity(String value) {
@@ -24,7 +25,8 @@ final class Hex {
       if (decoded.length != length) throw new IllegalArgumentException();
       return decoded;
     } catch (IllegalArgumentException e) {
-      throw new InvalidResolutionIdentifierException(field + " must be " + length + " bytes of hexadecimal");
+      throw new InvalidResolutionIdentifierException(
+          field + " must be " + length + " bytes of hexadecimal");
     }
   }
 }

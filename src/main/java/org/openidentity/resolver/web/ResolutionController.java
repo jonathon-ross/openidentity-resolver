@@ -16,7 +16,8 @@ public final class ResolutionController {
   @GetMapping("/{identity}")
   public ResponseEntity<ResolutionResponse> current(@PathVariable String identity) {
     byte[] id = Hex.identity(identity);
-    return states.findCurrent(id)
+    return states
+        .findCurrent(id)
         .map(ResolutionResponse::from)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());
@@ -27,7 +28,8 @@ public final class ResolutionController {
       @PathVariable String identity, @PathVariable String stateHash) {
     byte[] id = Hex.identity(identity);
     byte[] hash = Hex.stateHash(stateHash);
-    return states.findHistorical(id, hash)
+    return states
+        .findHistorical(id, hash)
         .map(ResolutionResponse::from)
         .map(ResponseEntity::ok)
         .orElseGet(() -> ResponseEntity.notFound().build());

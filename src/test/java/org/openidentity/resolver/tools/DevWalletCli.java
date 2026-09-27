@@ -7,13 +7,13 @@ import java.security.*;
 import java.security.interfaces.EdECPublicKey;
 import java.security.spec.EdECPoint;
 import java.util.*;
+import org.openidentity.cbor.OpenIdentityCborDecoder;
 import org.openidentity.core.*;
+import org.openidentity.credentials.CredentialSigningInputs;
+import org.openidentity.credentials.CredentialVerifier;
+import org.openidentity.credentials.OpenIdentityCredential;
 import org.openidentity.crypto.SignatureProof;
 import org.openidentity.crypto.SigningInputs;
-import org.openidentity.credentials.CredentialSigningInputs;
-import org.openidentity.credentials.OpenIdentityCredential;
-import org.openidentity.credentials.CredentialVerifier;
-import org.openidentity.cbor.OpenIdentityCborDecoder;
 import org.openidentity.operations.CreateOperation;
 import org.openidentity.operations.RotateControllerOperation;
 import org.openidentity.operations.SetAssertionPolicyOperation;
@@ -94,10 +94,7 @@ public final class DevWalletCli {
     CreateOperation operation =
         new CreateOperation(identity, ControllerPolicy.single(method), null);
     SignatureProof proof =
-        sign(
-            controller,
-            method.id(),
-            SigningInputs.operation(operation.encode()));
+        sign(controller, method.id(), SigningInputs.operation(operation.encode()));
 
     Map<String, Object> request =
         Map.of(
@@ -134,10 +131,7 @@ public final class DevWalletCli {
             ControllerPolicy.single(newMethod));
 
     SignatureProof authorization =
-        sign(
-            oldController,
-            oldMethod.id(),
-            SigningInputs.operation(operation.encode()));
+        sign(oldController, oldMethod.id(), SigningInputs.operation(operation.encode()));
     SignatureProof possession =
         sign(
             newController,
@@ -206,10 +200,7 @@ public final class DevWalletCli {
             AssertionPolicy.single(assertionMethod));
 
     SignatureProof authorization =
-        sign(
-            controller,
-            controllerMethod.id(),
-            SigningInputs.operation(operation.encode()));
+        sign(controller, controllerMethod.id(), SigningInputs.operation(operation.encode()));
     SignatureProof possession =
         sign(
             assertion,
@@ -283,11 +274,9 @@ public final class DevWalletCli {
     Map<String, Object> stored = JSON.readValue(credentialFile.toFile(), Map.class);
     String issuerHex = (String) stored.get("issuer");
     String issuanceHashHex = (String) stored.get("issuanceStateHash");
-    byte[] credentialBytes =
-        Base64.getUrlDecoder().decode((String) stored.get("credential"));
+    byte[] credentialBytes = Base64.getUrlDecoder().decode((String) stored.get("credential"));
 
-    List<Map<String, String>> storedProofs =
-        (List<Map<String, String>>) stored.get("proofs");
+    List<Map<String, String>> storedProofs = (List<Map<String, String>>) stored.get("proofs");
     List<SignatureProof> proofs =
         storedProofs.stream()
             .map(
@@ -300,11 +289,7 @@ public final class DevWalletCli {
 
     java.net.http.HttpClient http = java.net.http.HttpClient.newHttpClient();
     String historicalUrl =
-        resolverBaseUrl
-            + "/v1/identities/"
-            + issuerHex
-            + "/states/"
-            + issuanceHashHex;
+        resolverBaseUrl + "/v1/identities/" + issuerHex + "/states/" + issuanceHashHex;
     String currentUrl = resolverBaseUrl + "/v1/identities/" + issuerHex;
 
     Map<String, Object> historical = getJson(http, historicalUrl);
@@ -337,8 +322,8 @@ public final class DevWalletCli {
   }
 
   @SuppressWarnings("unchecked")
-  private static Map<String, Object> getJson(
-      java.net.http.HttpClient http, String url) throws Exception {
+  private static Map<String, Object> getJson(java.net.http.HttpClient http, String url)
+      throws Exception {
     java.net.http.HttpRequest request =
         java.net.http.HttpRequest.newBuilder(java.net.URI.create(url)).GET().build();
     java.net.http.HttpResponse<String> response =
@@ -365,8 +350,7 @@ public final class DevWalletCli {
         wallet.assertion().name().startsWith("assertion-")
             ? Integer.parseInt(wallet.assertion().name().substring("assertion-".length())) + 1
             : 2;
-    DevWallet.KeyEntry nextAssertion =
-        newKey("assertion-" + assertionNumber, new SecureRandom());
+    DevWallet.KeyEntry nextAssertion = newKey("assertion-" + assertionNumber, new SecureRandom());
 
     VerificationMethod controllerMethod = verificationMethod(controller);
     VerificationMethod assertionMethod = verificationMethod(nextAssertion);
@@ -378,10 +362,7 @@ public final class DevWalletCli {
             AssertionPolicy.single(assertionMethod));
 
     SignatureProof authorization =
-        sign(
-            controller,
-            controllerMethod.id(),
-            SigningInputs.operation(operation.encode()));
+        sign(controller, controllerMethod.id(), SigningInputs.operation(operation.encode()));
     SignatureProof possession =
         sign(
             nextAssertion,
@@ -415,12 +396,14 @@ public final class DevWalletCli {
   private static void issueCredential(String issuanceStateHashHex) throws Exception {
     DevWallet wallet = load();
     if (wallet.assertion() == null) {
-      throw new IllegalStateException("No active assertion key. Activate assertion authority first.");
+      throw new IllegalStateException(
+          "No active assertion key. Activate assertion authority first.");
     }
 
     byte[] credentialId = new byte[32];
     new SecureRandom().nextBytes(credentialId);
-    byte[] subject = ("did:open-dev:" + wallet.identityHex()).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    byte[] subject =
+        ("did:open-dev:" + wallet.identityHex()).getBytes(java.nio.charset.StandardCharsets.UTF_8);
     long validFrom = java.time.Instant.now().getEpochSecond();
     OpenIdentityCredential credential =
         new OpenIdentityCredential(
@@ -481,8 +464,8 @@ public final class DevWalletCli {
         Ed25519Key.of(HEX.parseHex(entry.publicKeyHex())));
   }
 
-  static SignatureProof sign(
-      DevWallet.KeyEntry entry, VerificationMethodId methodId, byte[] input) throws Exception {
+  static SignatureProof sign(DevWallet.KeyEntry entry, VerificationMethodId methodId, byte[] input)
+      throws Exception {
     KeyFactory factory = KeyFactory.getInstance("Ed25519");
     PrivateKey privateKey =
         factory.generatePrivate(
@@ -530,6 +513,7 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX|rotate-assertion STATE_HASH_HEX|verify-credential [RESOLVER_URL]>");
+    throw new IllegalArgumentException(
+        "Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX|rotate-assertion STATE_HASH_HEX|verify-credential [RESOLVER_URL]>");
   }
 }
