@@ -11,6 +11,7 @@ import org.openidentity.core.*;
 import org.openidentity.crypto.SignatureProof;
 import org.openidentity.crypto.SigningInputs;
 import org.openidentity.operations.CreateOperation;
+import org.openidentity.operations.RotateControllerOperation;
 
 /**
  * Local development wallet CLI for exercising resolver lifecycle operations.
@@ -26,10 +27,15 @@ public final class DevWalletCli {
   private DevWalletCli() {}
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 1) usage();
+    if (args.length < 1) usage();
     switch (args[0]) {
       case "init" -> init();
       case "create" -> create();
+      case "rotate" -> {
+        if (args.length != 2) usage();
+        rotate(args[1]);
+      }
+      case "activate-controller" -> activateController();
       default -> usage();
     }
   }
@@ -46,7 +52,8 @@ public final class DevWalletCli {
 
     DevWallet.KeyEntry controller = newKey("controller-1", random);
     DevWallet wallet =
-        new DevWallet(HEX.formatHex(identity), controller.name(), List.of(controller), null);
+        new DevWallet(
+            HEX.formatHex(identity), controller.name(), null, List.of(controller), null);
     JSON.writeValue(WALLET.toFile(), wallet);
 
     System.out.println("Created local development wallet: " + WALLET);
@@ -80,6 +87,88 @@ public final class DevWalletCli {
 
     System.out.println("Identity: " + wallet.identityHex());
     System.out.println(JSON.writeValueAsString(request));
+  }
+
+  private static void rotate(String currentStateHashHex) throws Exception {
+    DevWallet wallet = load();
+    if (wallet.pendingController() != null) {
+      throw new IllegalStateException(
+          "A pending controller already exists. Submit/activate it before generating another rotation.");
+    }
+
+    DevWallet.KeyEntry oldController = activeController(wallet);
+    SecureRandom random = new SecureRandom();
+    DevWallet.KeyEntry newController =
+        newKey("controller-" + (wallet.controllers().size() + 1), random);
+
+    VerificationMethod oldMethod = verificationMethod(oldController);
+    VerificationMethod newMethod = verificationMethod(newController);
+    RotateControllerOperation operation =
+        new RotateControllerOperation(
+            IdentityId.of(HEX.parseHex(wallet.identityHex())),
+            Sequence.of(2),
+            new StateHash(MultihashSha256.of(HEX.parseHex(currentStateHashHex))),
+            ControllerPolicy.single(newMethod));
+
+    SignatureProof authorization =
+        sign(
+            oldController,
+            oldMethod.id(),
+            SigningInputs.operation(operation.encode()));
+    SignatureProof possession =
+        sign(
+            newController,
+            newMethod.id(),
+            SigningInputs.controllerProof(operation.encode(), newMethod.id()));
+
+    ArrayList<DevWallet.KeyEntry> controllers = new ArrayList<>(wallet.controllers());
+    controllers.add(newController);
+    save(
+        new DevWallet(
+            wallet.identityHex(),
+            wallet.activeController(),
+            newController.name(),
+            List.copyOf(controllers),
+            wallet.assertion()));
+
+    Map<String, Object> request =
+        Map.of(
+            "operation",
+            b64url(operation.encode()),
+            "proofs",
+            List.of(proofJson(authorization)),
+            "proofsOfPossession",
+            List.of(proofJson(possession)));
+
+    System.out.println("Identity: " + wallet.identityHex());
+    System.out.println("Pending controller: " + newController.name());
+    System.out.println(JSON.writeValueAsString(request));
+  }
+
+  private static void activateController() throws Exception {
+    DevWallet wallet = load();
+    if (wallet.pendingController() == null) {
+      throw new IllegalStateException("No pending controller exists.");
+    }
+    String activated = wallet.pendingController();
+    save(
+        new DevWallet(
+            wallet.identityHex(),
+            activated,
+            null,
+            wallet.controllers(),
+            wallet.assertion()));
+    System.out.println("Activated controller: " + activated);
+  }
+
+  private static Map<String, Object> proofJson(SignatureProof proof) {
+    return Map.of(
+        "methodId", b64url(proof.methodId().bytes()),
+        "signature", b64url(proof.signature()));
+  }
+
+  private static void save(DevWallet wallet) throws Exception {
+    JSON.writeValue(WALLET.toFile(), wallet);
   }
 
   static DevWallet load() throws Exception {
@@ -144,6 +233,6 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create>");
+    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller>");
   }
 }
