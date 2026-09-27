@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class OperationSubmissionService {
   private final JdbcClient jdbc;
 
-  /** @param jdbc configured resolver database client */
+  /**
+   * @param jdbc configured resolver database client
+   */
   public OperationSubmissionService(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
@@ -26,7 +28,8 @@ public class OperationSubmissionService {
    *
    * @param request canonical operation and detached proofs
    * @return resulting state metadata
-   * @throws OperationSubmissionException when decoding, authorization, transition, or persistence fails
+   * @throws OperationSubmissionException when decoding, authorization, transition, or persistence
+   *     fails
    */
   @Transactional
   public OperationSubmissionResponse submit(OperationSubmissionRequest request) {

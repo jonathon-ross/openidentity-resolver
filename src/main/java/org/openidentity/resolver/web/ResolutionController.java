@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 public final class ResolutionController {
   private final IdentityStateRepository states;
 
-  /** @param states immutable identity-state repository */
+  /**
+   * @param states immutable identity-state repository
+   */
   public ResolutionController(IdentityStateRepository states) {
     this.states = states;
   }

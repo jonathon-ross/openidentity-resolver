@@ -30,19 +30,26 @@ public record StoredIdentityState(
     canonicalStateBytes = canonicalStateBytes.clone();
   }
 
-  /** Returns a defensive copy of the raw StateHash bytes.\n   *\n   * @return copied StateHash bytes\n   */
+  /**
+   * Returns a defensive copy of the raw StateHash bytes.\n *\n * @return copied StateHash bytes\n
+   */
   @Override
   public byte[] stateHash() {
     return stateHash.clone();
   }
 
-  /** Returns a defensive copy of the raw IdentityId bytes.\n   *\n   * @return copied IdentityId bytes\n   */
+  /**
+   * Returns a defensive copy of the raw IdentityId bytes.\n *\n * @return copied IdentityId bytes\n
+   */
   @Override
   public byte[] identityId() {
     return identityId.clone();
   }
 
-  /** Returns a defensive copy of the authoritative canonical state bytes.\n   *\n   * @return copied canonical state bytes\n   */
+  /**
+   * Returns a defensive copy of the authoritative canonical state bytes.\n *\n * @return copied
+   * canonical state bytes\n
+   */
   @Override
   public byte[] canonicalStateBytes() {
     return canonicalStateBytes.clone();

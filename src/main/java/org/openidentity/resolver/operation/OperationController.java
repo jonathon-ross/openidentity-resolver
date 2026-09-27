@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 public class OperationController {
   private final OperationSubmissionService submissions;
 
-  /** @param submissions verified operation application service */
+  /**
+   * @param submissions verified operation application service
+   */
   public OperationController(OperationSubmissionService submissions) {
     this.submissions = submissions;
   }
