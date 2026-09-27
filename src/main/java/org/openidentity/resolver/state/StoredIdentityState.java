@@ -31,7 +31,9 @@ public record StoredIdentityState(
   }
 
   /**
-   * Returns a defensive copy of the raw StateHash bytes.\n *\n * @return copied StateHash bytes\n
+   * Returns a defensive copy of the raw StateHash bytes.
+   *
+   * @return copied StateHash bytes
    */
   @Override
   public byte[] stateHash() {
@@ -39,7 +41,9 @@ public record StoredIdentityState(
   }
 
   /**
-   * Returns a defensive copy of the raw IdentityId bytes.\n *\n * @return copied IdentityId bytes\n
+   * Returns a defensive copy of the raw IdentityId bytes.
+   *
+   * @return copied IdentityId bytes
    */
   @Override
   public byte[] identityId() {
@@ -47,8 +51,9 @@ public record StoredIdentityState(
   }
 
   /**
-   * Returns a defensive copy of the authoritative canonical state bytes.\n *\n * @return copied
-   * canonical state bytes\n
+   * Returns a defensive copy of the authoritative canonical state bytes.
+   *
+   * @return copied canonical state bytes
    */
   @Override
   public byte[] canonicalStateBytes() {
