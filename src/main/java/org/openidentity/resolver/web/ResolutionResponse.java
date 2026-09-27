@@ -5,7 +5,17 @@ import java.time.Instant;
 import java.util.Base64;
 import org.openidentity.resolver.state.StoredIdentityState;
 
-/** JSON representation of resolved canonical state and indexing metadata. */
+/**
+ * HTTP representation of a resolved canonical OpenIdentity state.
+ *
+ * @param identity hexadecimal 32-byte IdentityId
+ * @param sequence state sequence
+ * @param stateHash hexadecimal 34-byte SHA2-256 Multihash
+ * @param stateVersion IdentityState schema version
+ * @param status protocol status code
+ * @param canonicalState unpadded base64url deterministic-CBOR state bytes
+ * @param createdAt resolver persistence timestamp
+ */
 public record ResolutionResponse(
     String identity,
     BigInteger sequence,
