@@ -12,6 +12,8 @@ import org.openidentity.crypto.SignatureProof;
 import org.openidentity.crypto.SigningInputs;
 import org.openidentity.credentials.CredentialSigningInputs;
 import org.openidentity.credentials.OpenIdentityCredential;
+import org.openidentity.credentials.CredentialVerifier;
+import org.openidentity.cbor.OpenIdentityCborDecoder;
 import org.openidentity.operations.CreateOperation;
 import org.openidentity.operations.RotateControllerOperation;
 import org.openidentity.operations.SetAssertionPolicyOperation;
@@ -52,6 +54,10 @@ public final class DevWalletCli {
       case "rotate-assertion" -> {
         if (args.length != 2) usage();
         rotateAssertion(args[1]);
+      }
+      case "verify-credential" -> {
+        if (args.length > 2) usage();
+        verifyCredential(args.length == 2 ? args[1] : "http://localhost:8080");
       }
       default -> usage();
     }
@@ -267,6 +273,83 @@ public final class DevWalletCli {
     System.out.println("Discarded pending assertion key: " + discarded);
   }
 
+  @SuppressWarnings("unchecked")
+  private static void verifyCredential(String resolverBaseUrl) throws Exception {
+    Path credentialFile = WALLET.getParent().resolve("credential-1.json");
+    if (!Files.exists(credentialFile)) {
+      throw new IllegalStateException("Credential not found: " + credentialFile);
+    }
+
+    Map<String, Object> stored = JSON.readValue(credentialFile.toFile(), Map.class);
+    String issuerHex = (String) stored.get("issuer");
+    String issuanceHashHex = (String) stored.get("issuanceStateHash");
+    byte[] credentialBytes =
+        Base64.getUrlDecoder().decode((String) stored.get("credential"));
+
+    List<Map<String, String>> storedProofs =
+        (List<Map<String, String>>) stored.get("proofs");
+    List<SignatureProof> proofs =
+        storedProofs.stream()
+            .map(
+                proof ->
+                    new SignatureProof(
+                        VerificationMethodId.of(
+                            Base64.getUrlDecoder().decode(proof.get("methodId"))),
+                        Base64.getUrlDecoder().decode(proof.get("signature"))))
+            .toList();
+
+    java.net.http.HttpClient http = java.net.http.HttpClient.newHttpClient();
+    String historicalUrl =
+        resolverBaseUrl
+            + "/v1/identities/"
+            + issuerHex
+            + "/states/"
+            + issuanceHashHex;
+    String currentUrl = resolverBaseUrl + "/v1/identities/" + issuerHex;
+
+    Map<String, Object> historical = getJson(http, historicalUrl);
+    Map<String, Object> current = getJson(http, currentUrl);
+
+    byte[] canonicalState =
+        Base64.getUrlDecoder().decode((String) historical.get("canonicalState"));
+    IdentityState historicalState = OpenIdentityCborDecoder.decodeState(canonicalState);
+
+    VerificationResult result =
+        CredentialVerifier.verifyResult(
+            credentialBytes,
+            IdentityId.of(HEX.parseHex(issuerHex)),
+            new StateHash(MultihashSha256.of(HEX.parseHex(issuanceHashHex))),
+            historicalState,
+            proofs);
+
+    System.out.println("Credential issuer: " + issuerHex);
+    System.out.println("Issuance StateHash: " + issuanceHashHex);
+    System.out.println("Historical sequence: " + historical.get("sequence"));
+    System.out.println("Current sequence: " + current.get("sequence"));
+    System.out.println("Historical state version: " + historical.get("stateVersion"));
+    System.out.println("Current state version: " + current.get("stateVersion"));
+    System.out.println("Cryptographic verification: " + (result.valid() ? "VALID" : "INVALID"));
+    if (!result.valid()) {
+      System.out.println("Error: " + result.error());
+      System.out.println("Detail: " + result.detail());
+      throw new IllegalStateException("Credential verification failed");
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> getJson(
+      java.net.http.HttpClient http, String url) throws Exception {
+    java.net.http.HttpRequest request =
+        java.net.http.HttpRequest.newBuilder(java.net.URI.create(url)).GET().build();
+    java.net.http.HttpResponse<String> response =
+        http.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() != 200) {
+      throw new IllegalStateException(
+          "Resolver returned HTTP " + response.statusCode() + " for " + url);
+    }
+    return JSON.readValue(response.body(), Map.class);
+  }
+
   private static void rotateAssertion(String currentStateHashHex) throws Exception {
     DevWallet wallet = load();
     if (wallet.assertion() == null) {
@@ -447,6 +530,6 @@ public final class DevWalletCli {
   }
 
   private static void usage() {
-    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX|rotate-assertion STATE_HASH_HEX>");
+    throw new IllegalArgumentException("Usage: DevWalletCli <init|create|rotate STATE_HASH_HEX|activate-controller|set-assertion-policy STATE_HASH_HEX|activate-assertion|discard-pending-assertion|issue-credential STATE_HASH_HEX|rotate-assertion STATE_HASH_HEX|verify-credential [RESOLVER_URL]>");
   }
 }
