@@ -17,6 +17,8 @@ public class OperationSubmissionService {
   private final JdbcClient jdbc;
 
   /**
+   * Creates the operation application service.
+   *
    * @param jdbc configured resolver database client
    */
   public OperationSubmissionService(JdbcClient jdbc) {
