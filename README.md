@@ -143,3 +143,30 @@ curl http://localhost:8080/v1/identities/000102030405060708090a0b0c0d0e0f1011121
 ```
 
 Submitting V02 a second time should return HTTP 409 `IDENTITY_ALREADY_EXISTS`.
+
+
+## Local development wallet
+
+For mutable lifecycle testing, use the local Ed25519 development wallet. The wallet contains private key material and is stored at `.openidentity/dev-wallet.json`; the entire `.openidentity/` directory is gitignored.
+
+Initialize once:
+
+```bash
+mvn test-compile exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=org.openidentity.resolver.tools.DevWalletCli \
+  -Dexec.args=init
+```
+
+Generate a signed CREATE request from the wallet:
+
+```bash
+mvn test-compile exec:java \
+  -Dexec.classpathScope=test \
+  -Dexec.mainClass=org.openidentity.resolver.tools.DevWalletCli \
+  -Dexec.args=create
+```
+
+The command prints the identity followed by a JSON request body. Save only the JSON object and submit it to `POST /v1/operations`.
+
+The development wallet is for local interoperability testing only. Do not use it as production key-management infrastructure.
