@@ -2,7 +2,14 @@ package org.openidentity.resolver.operation;
 
 import java.util.List;
 
-/** HTTP submission envelope carrying canonical operation bytes and detached authorization proofs. */
-public record OperationSubmissionRequest(String operation, List<ProofRequest> proofs) {
+/**
+ * HTTP submission envelope carrying canonical operation bytes and detached protocol proofs.
+ *
+ * @param operation unpadded base64url canonical operation bytes
+ * @param proofs operation authorization proofs
+ * @param proofsOfPossession proposed-authority proof-of-possession proofs when required
+ */
+public record OperationSubmissionRequest(
+    String operation, List<ProofRequest> proofs, List<ProofRequest> proofsOfPossession) {
   public record ProofRequest(String methodId, String signature) {}
 }
